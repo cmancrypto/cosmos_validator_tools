@@ -63,9 +63,11 @@ async def parse_validator_response(resp_json:dict):
     print(validators)
     return validators
 
-async def fetch_multiple_validator_types(validator_statuses : list):
+async def fetch_multiple_validator_types(session: ClientSession, chain_name : str, validator_statuses : list):
     for validator_status in validator_statuses:
-        pass
+       validators = await parse_validator_response(fetch_validator_response(session=session,chain_name=chain_name,validator_status=validator_status))
+    print(type(validators))
+
 
 
 async def main(chain_name:str):
