@@ -17,3 +17,17 @@ async def fetch_rest_api(url: str, session: ClientSession, **kwargs):
     logger.info("Got response [%s] for URL: %s", resp.status, url)
     resp_json = await resp.json()
     return resp_json
+
+
+class DynamicAccessNestedDict:
+    """ wrapper class for dictionaries to allow access to dynamic nested keys easily."""
+
+    def __init__(self, data: dict):
+        self.data = data
+
+    def get_value(self, keys: list):
+        """ gets the values for data[{key[0]}]...[{key[n]}]"""
+        data=self.data
+        for k in keys:
+            data = data[k]
+        return data

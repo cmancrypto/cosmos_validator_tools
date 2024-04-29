@@ -1,5 +1,4 @@
-"""take a snapshot of all validators"""
-from __future__ import annotations
+"""take a snapshot of all validators on all chains matching the desired BOND_STATUS type"""
 
 import asyncio
 import logging
@@ -89,10 +88,10 @@ async def fetch_and_parse_validator_snapshot(session: ClientSession, chain_name:
             )
         )
         logger.info("Parsed %d validators for %s of status %s", len(validators), chain_name, validator_status)
-        chain_validators={"chain":chain_name, "status": validator_status, "time" : str(time.time()), "validator_response" : validators}
+        chain_validators={"chain":chain_name, "status": validator_status, "time" : time.strftime("%Y-%m-%d", time.gmtime()), "validator_response" : validators}
         return chain_validators
     except Exception as e:
-        chain_validators = {"chain": chain_name, "status": validator_status, "time" : str(time.time()),"validator_response": []}
+        chain_validators = {"chain": chain_name, "status": validator_status, "time" : time.strftime("%Y-%m-%d", time.gmtime()),"validator_response": []}
         return chain_validators
         logger.error(
             "parsing exception for %s on %s [%s]: %s",
@@ -132,16 +131,35 @@ async def get_all_chains_validators(validator_statuses:[str] = ["BOND_STATUS_BON
         all_chains_results = await asyncio.gather(*tasks)
     return all_chains_results
 
+class DumpJson:
+    """
+    dump : bool
+    filepath : str - required if dump = True
+    """
+    def __init__(self, dump: bool = False, filepath: str = None):
+        self.dump = dump
+        if self.dump == True and filepath == None:
+            raise ValueError("need file path if DumpJson dump True")
+        self.filepath = filepath
+
 ##todo take filepath, take validator statuses, take optional dump, return validator results
-def main():
+def main(dump_json: DumpJson, bond_status_list: list = ["BOND_STATUS_BONDED"]):
     start_time = time.time()
     loop=asyncio.get_event_loop()
-    results = loop.run_until_complete(get_all_chains_validators(validator_statuses=["BOND_STATUS_BONDED"]))
-    with open("validator_snapshot.json", "w") as file:
-        json.dump(results, file)
+    results = loop.run_until_complete(get_all_chains_validators(validator_statuses=bond_status_list))
+    if dump_json.dump == True:
+        with open(dump_json.filepath, "w") as file:
+            json.dump(results, file)
     end_time = time.time()
     runtime = end_time - start_time
-    print(runtime)
+    logger.info("Total runtime was %s seconds", runtime)
+    return results
+
+
 
 if __name__ == "__main__":
-    main()
+    results=main(
+        DumpJson(dump=False),
+        bond_status_list=["BOND_STATUS_BONDED"]
+    )
+    print(results[1]["validator_response"][0])
