@@ -145,7 +145,11 @@ class DumpJson:
 
 
 ##todo take filepath, take validator statuses, take optional dump, return validator results
-def main(dump_json: DumpJson, bond_status_list: list = ["BOND_STATUS_BONDED"])-> list:
+def main(
+        dump_json: DumpJson,
+         bond_status_list: list = ["BOND_STATUS_BONDED"],
+         validator_results_filters: list=[]
+         )-> list:
     """
     :param dump_json: DumpJson - validator_snapshot.DumpJson type - a neat wrapper to allow bool to determine dumping to json and providing a filepath for outputting JSON
     :param bond_status_list: list - a list of all of the bond status' to be queried
@@ -153,20 +157,52 @@ def main(dump_json: DumpJson, bond_status_list: list = ["BOND_STATUS_BONDED"])->
     """
     start_time = time.time()
     loop=asyncio.get_event_loop()
-    results = loop.run_until_complete(get_all_chains_validators(validator_statuses=bond_status_list))
+    all_chain_results = loop.run_until_complete(get_all_chains_validators(validator_statuses=bond_status_list))
+
+    ##if filters are specified, filter the individual validator response
+    #todo, allow for multiple deep nested response using helpers for dynamic nested
+    if len(validator_results_filters) > 0:
+        filtered_results=[]
+        #print(all_chain_results)
+        for i,chain_result in enumerate(all_chain_results):
+            all_validator_data=[]
+            if len(chain_result[i]["validator_response"])>0:
+                for j,validator_results in enumerate(chain_result["validator_response"]):
+                    validator_data = {}
+                    for filter in validator_results_filters:
+                        try:
+                            validator_data[filter]=all_chain_results[i]["validator_response"][j][filter]
+                        except KeyError as e:
+                            logger.error(
+                                "key error  for %s on status %s of [%s]: %s",
+                                chain_result[i]["chain"],
+                                chain_result[i]["status"],
+                                getattr(e, "status", None),
+                                getattr(e, "message", None),
+                            )
+                    all_validator_data.append(validator_data)
+                all_chain_results[i]["validator_response"]=all_validator_data
+            else:
+                logger.info("No validators or result error recorded for %s",all_chain_results[i]["chain"])
+        print(all_chain_results)
+
+
+
     if dump_json.dump == True:
         with open(dump_json.filepath, "w") as file:
-            json.dump(results, file)
+            json.dump(all_chain_results, file)
     end_time = time.time()
     runtime = end_time - start_time
     logger.info("Total runtime was %s seconds", runtime)
-    return results
+
+    return all_chain_results
 
 
 
 if __name__ == "__main__":
     results=main(
-        DumpJson(dump=False),
-        bond_status_list=["BOND_STATUS_BONDED"]
+        DumpJson(dump=True,filepath="validator_snapshot.json"),
+        bond_status_list=["BOND_STATUS_BONDED"],
+        validator_results_filters=["operator_address","tokens","moniker"]
     )
-    print(results[1]["validator_response"][0])
+    #print(results)
