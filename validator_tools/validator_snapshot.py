@@ -166,7 +166,7 @@ def main(
         #print(all_chain_results)
         for i,chain_result in enumerate(all_chain_results):
             all_validator_data=[]
-            if len(chain_result[i]["validator_response"])>0:
+            if len(chain_result["validator_response"])>0:
                 for j,validator_results in enumerate(chain_result["validator_response"]):
                     validator_data = {}
                     for filter in validator_results_filters:
