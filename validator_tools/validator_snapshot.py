@@ -92,7 +92,6 @@ async def fetch_and_parse_validator_snapshot(session: ClientSession, chain_name:
         return chain_validators
     except Exception as e:
         chain_validators = {"chain": chain_name, "status": validator_status, "time" : time.strftime("%Y-%m-%d", time.gmtime()),"validator_response": []}
-        return chain_validators
         logger.error(
             "parsing exception for %s on %s [%s]: %s",
             chain_name,
@@ -100,6 +99,8 @@ async def fetch_and_parse_validator_snapshot(session: ClientSession, chain_name:
             getattr(e, "status", None),
             getattr(e, "message", None),
         )
+
+        return chain_validators
 
 
 
@@ -142,8 +143,14 @@ class DumpJson:
             raise ValueError("need file path if DumpJson dump True")
         self.filepath = filepath
 
+
 ##todo take filepath, take validator statuses, take optional dump, return validator results
-def main(dump_json: DumpJson, bond_status_list: list = ["BOND_STATUS_BONDED"]):
+def main(dump_json: DumpJson, bond_status_list: list = ["BOND_STATUS_BONDED"])-> list:
+    """
+    :param dump_json: DumpJson - validator_snapshot.DumpJson type - a neat wrapper to allow bool to determine dumping to json and providing a filepath for outputting JSON
+    :param bond_status_list: list - a list of all of the bond status' to be queried
+    :return: list -> this returns a list of dicts for each chain and bond status format is
+    """
     start_time = time.time()
     loop=asyncio.get_event_loop()
     results = loop.run_until_complete(get_all_chains_validators(validator_statuses=bond_status_list))
