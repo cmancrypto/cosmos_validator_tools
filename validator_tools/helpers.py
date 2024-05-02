@@ -1,6 +1,8 @@
 import logging
 import sys
 from aiohttp import ClientSession
+import typing
+import json
 
 ##set up logging config to log events to terminal
 logging.basicConfig(
@@ -19,15 +21,20 @@ async def fetch_rest_api(url: str, session: ClientSession, **kwargs):
     return resp_json
 
 
-class DynamicAccessNestedDict:
-    """ wrapper class for dictionaries to allow access to dynamic nested keys easily."""
+def get_value_dynamic_keys(d, keys):
+    for key in keys:
+        d = d[key]
+    return d
 
-    def __init__(self, data: dict):
-        self.data = data
-
-    def get_value(self, keys: list):
-        """ gets the values for data[{key[0]}]...[{key[n]}]"""
-        data=self.data
-        for k in keys:
-            data = data[k]
-        return data
+def set_value_dynamic_keys(dic, keys, value, create_missing=True):
+    d=dic
+    for key in keys[:-1]:
+        if key in d:
+            d = d[key]
+        elif create_missing:
+            d = d.setdefault(key,{})
+        else:
+            return dic
+    if keys[-1] in d or create_missing:
+        d[keys[-1]] = value
+        return dic

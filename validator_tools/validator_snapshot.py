@@ -169,16 +169,17 @@ def main(
             if len(chain_result["validator_response"])>0:
                 for j,validator_results in enumerate(chain_result["validator_response"]):
                     validator_data = {}
-                    for filter in validator_results_filters:
+                    for k,filter in enumerate(validator_results_filters):
                         try:
-                            validator_data[filter]=all_chain_results[i]["validator_response"][j][filter]
+                            value=helpers.get_value_dynamic_keys(all_chain_results[i]["validator_response"][j],filter)
+                            validator_data=helpers.set_value_dynamic_keys(validator_data,filter,value)
                         except KeyError as e:
                             logger.error(
-                                "key error  for %s on status %s of [%s]: %s",
-                                chain_result[i]["chain"],
-                                chain_result[i]["status"],
-                                getattr(e, "status", None),
-                                getattr(e, "message", None),
+                                "key error  for %s on status %s of [%s] with %s filter",
+                                all_chain_results[i]["chain"],
+                                all_chain_results[i]["status"],
+                                e,
+                                filter
                             )
                     all_validator_data.append(validator_data)
                 all_chain_results[i]["validator_response"]=all_validator_data
@@ -203,6 +204,8 @@ if __name__ == "__main__":
     results=main(
         DumpJson(dump=True,filepath="validator_snapshot.json"),
         bond_status_list=["BOND_STATUS_BONDED"],
-        validator_results_filters=["operator_address","tokens","moniker"]
+        validator_results_filters=[["operator_address"],["tokens"],["status"],["description","moniker"]]##this is a list of lists, where a filter needs to be nested i.e validator_response[i][j] - these should be in format ["i","j"]
     )
+
+
     #print(results)
