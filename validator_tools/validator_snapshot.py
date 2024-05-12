@@ -2,16 +2,12 @@
 
 import asyncio
 import logging
-import re
 import sys
-from typing import IO
-import urllib.error
-import urllib.parse
 import time
-import aiofiles
 import aiohttp
 from aiohttp import ClientSession
 import tenacity
+import pymongo_get_database
 
 
 import helpers
@@ -201,11 +197,13 @@ def main(
 
 
 if __name__ == "__main__":
+
+    collection=pymongo_get_database.get_collection()
     results=main(
         DumpJson(dump=True,filepath="validator_snapshot.json"),
         bond_status_list=["BOND_STATUS_BONDED"],
         validator_results_filters=[["operator_address"],["tokens"],["status"],["description","moniker"]]##this is a list of lists, where a filter needs to be nested i.e validator_response[i][j] - these should be in format ["i","j"]
     )
 
-
-    #print(results)
+    for result in results:
+        x=collection.insert_one(result)
